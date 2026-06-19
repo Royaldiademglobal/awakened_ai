@@ -39380,7 +39380,7 @@ if(J.cS(d)===0){s=1
 break}m.ap(new A.ado(m,d))
 e.og(B.Mq)
 p=4
-l=A.hc("/api/chat")
+l=A.hc("https://awakened.royaldiademglobalservices.com")
 e=t.N
 h=A.ai(["Content-Type","application/json"],e,e)
 s=7
