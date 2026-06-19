@@ -13,7 +13,6 @@ module.exports = function (req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Visual layout parsing array to collect the text package securely
   let incomingBuffer = [];
   req.on('data', (chunk) => {
     incomingBuffer.push(chunk);
@@ -25,8 +24,6 @@ module.exports = function (req, res) {
       const rawText = fullBuffer.toString('utf8');
       
       let finalUserText = '';
-      
-      // Auto-extract the core data message no matter what layout format Flutter transmits
       if (rawText) {
         try {
           const parsed = JSON.parse(rawText);
@@ -41,7 +38,6 @@ module.exports = function (req, res) {
         }
       }
 
-      // Secure OpenRouter Ingestion Engine parameters
       const postData = JSON.stringify({
         model: 'meta-llama/llama-3.1-70b-instruct:free',
         messages: [
@@ -57,7 +53,7 @@ module.exports = function (req, res) {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer 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',
-          'HTTP-Referer': 'https://royaldiademglobalservices.com',
+          'HTTP-Referer': 'https://awakened.royaldiademglobalservices.com',
           'X-Title': 'Awakened AI Sanctuary',
           'Content-Length': Buffer.byteLength(postData)
         }
