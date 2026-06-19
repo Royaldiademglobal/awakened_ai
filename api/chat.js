@@ -31,7 +31,7 @@ module.exports = function (req, res) {
         } catch (e) {
           if (rawText.includes('"message":')) {
             const match = rawText.match(/"message"\s*:\s*"([^"]+)"/);
-            finalUserText = match ? match[1] : rawText;
+            finalUserText = match ? match : rawText;
           } else {
             finalUserText = rawText;
           }
@@ -63,24 +63,36 @@ module.exports = function (req, res) {
         let responseData = '';
         response.on('data', (chunk) => { responseData += chunk; });
         response.on('end', () => {
-          res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-          return res.status(200).send(responseData);
+          try {
+            const openRouterJson = JSON.parse(responseData);
+            
+            if (openRouterJson.choices && openRouterJson.choices[0] && openRouterJson.choices[0].message) {
+              const aiResponseText = openRouterJson.choices[0].message.content;
+              
+              res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+              return res.status(200).json({ message: aiResponseText, response: aiResponseText });
+            } else {
+              res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+              return res.status(200).json({ message: "The message stream is settling. Send it once more.", response: "The message stream is settling. Send it once more." });
+            }
+          } catch (e) {
+            res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+            return res.status(200).json({ message: "Cosmic alignment processing. Please re-send.", response: "Cosmic alignment processing. Please re-send." });
+          }
         });
       });
 
       request.on('error', (error) => {
-        return res.status(200).json({
-          choices: [{ message: { role: 'assistant', content: 'The cosmic data lines are balancing. Send your message once more.' } }]
-        });
+        res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+        return res.status(200).json({ message: "Network field stabilizing. Retry message.", response: "Network field stabilizing. Retry message." });
       });
 
       request.write(postData);
       request.end();
 
     } catch (err) {
-      return res.status(200).json({
-        choices: [{ message: { role: 'assistant', content: 'The network field is settling. Refresh once to align.' } }]
-      });
+      res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+      return res.status(200).json({ message: "Sanctuary balancing. Refresh to connect.", response: "Sanctuary balancing. Refresh to connect." });
     }
   });
 };
