@@ -14,9 +14,7 @@ module.exports = function (req, res) {
   }
 
   let incomingBuffer = [];
-  req.on('data', (chunk) => {
-    incomingBuffer.push(chunk);
-  });
+  req.on('data', (chunk) => { incomingBuffer.push(chunk); });
 
   req.on('end', () => {
     try {
@@ -39,9 +37,9 @@ module.exports = function (req, res) {
       }
 
       const postData = JSON.stringify({
-        model: 'meta-llama/llama-3.1-70b-instruct:free',
+        model: 'meta-llama/llama-3.3-70b-instruct:free',
         messages: [
-          { role: 'system', content: 'You are a luxury psychoanalytic spiritual guidance companion. Speak with ancient wisdom, depth, and clarity.' },
+          { role: 'system', content: 'You are a luxury psychoanalytic spiritual guidance companion. Speak with ancient wisdom, depth, and clarity. Interact in fluid back-and-forth conversation.' },
           { role: 'user', content: finalUserText }
         ]
       });
@@ -66,40 +64,45 @@ module.exports = function (req, res) {
           try {
             const openRouterJson = JSON.parse(responseData);
             
-            let cleanAiText = '';
             if (openRouterJson && openRouterJson.choices && openRouterJson.choices[0] && openRouterJson.choices[0].message) {
-              cleanAiText = openRouterJson.choices[0].message.content;
-            } else if (openRouterJson && openRouterJson.message) {
-              cleanAiText = openRouterJson.message;
+              const aiResponseText = openRouterJson.choices[0].message.content;
+              res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+              return res.status(200).json({ message: aiResponseText, response: aiResponseText, text: aiResponseText });
             } else {
-              cleanAiText = "The sanctuary pathways are actively balancing your frequency. Repeat your reflection once more to lock in the alignment.";
+              const retryData = JSON.stringify({
+                model: 'meta-llama/llama-3.1-70b-instruct:free',
+                messages: [{ role: 'system', content: 'You are a luxury spiritual companion.' }, { role: 'user', content: finalUserText }]
+              });
+              options.ContentLength = Buffer.byteLength(retryData);
+              const retryRequest = https.request(options, (retryRes) => {
+                let rData = '';
+                retryRes.on('data', (c) => { rData += c; });
+                retryRes.on('end', () => {
+                  try {
+                    const rJson = JSON.parse(rData);
+                    if (rJson && rJson.choices && rJson.choices[0]) {
+                      const txt = rJson.choices[0].message.content;
+                      res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+                      return res.status(200).json({ message: txt, response: txt, text: txt });
+                    }
+                  } catch(err) {}
+                  res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+                  return res.status(200).json({ message: "The currents are gathering. Re-send your message statement once more to align.", response: "The currents are gathering.", text: "The currents are gathering." });
+                });
+              });
+              retryRequest.write(retryData);
+              retryRequest.end();
             }
-
-            res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-            return res.status(200).json({
-              message: cleanAiText,
-              response: cleanAiText,
-              text: cleanAiText
-            });
-
           } catch (e) {
             res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-            return res.status(200).json({
-              message: "Cosmic alignment processing. Please re-send your reflection.",
-              response: "Cosmic alignment processing. Please re-send your reflection.",
-              text: "Cosmic alignment processing. Please re-send your reflection."
-            });
+            return res.status(200).json({ message: "Re-aligning text channels. Retry your expression.", response: "Error caught.", text: "Error caught." });
           }
         });
       });
 
       request.on('error', (error) => {
         res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-        return res.status(200).json({
-          message: "Network field stabilizing. Retry message.",
-          response: "Network field stabilizing. Retry message.",
-          text: "Network field stabilizing. Retry message."
-        });
+        return res.status(200).json({ message: "Network gateway stabilizing. Retry expression.", response: "Error.", text: "Error." });
       });
 
       request.write(postData);
@@ -107,11 +110,7 @@ module.exports = function (req, res) {
 
     } catch (err) {
       res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-      return res.status(200).json({
-        message: "Sanctuary balancing completed. Refresh once to connect with the core.",
-        response: "Sanctuary balancing completed. Refresh once to connect with the core.",
-        text: "Sanctuary balancing completed. Refresh once to connect with the core."
-      });
+      return res.status(200).json({ message: "Sanctuary corridor clear. Send reflection again.", response: "Error.", text: "Error." });
     }
   });
 };
