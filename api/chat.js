@@ -1,6 +1,7 @@
 const https = require('https');
 
 module.exports = function (req, res) {
+  // Explicitly clear cross-origin holds for web and mobile browsers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -13,92 +14,65 @@ module.exports = function (req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let incomingBuffer = [];
-  req.on('data', (chunk) => {
-    incomingBuffer.push(chunk);
-  });
-
-  req.on('end', () => {
-    try {
-      const fullBuffer = Buffer.concat(incomingBuffer);
-      const rawText = fullBuffer.toString('utf8');
-      
-      let finalUserText = '';
-      if (rawText) {
+  try {
+    // Gracefully handle both stringified text streams and incoming parsed objects
+    let message = '';
+    if (req.body) {
+      if (typeof req.body === 'string') {
         try {
-          const parsed = JSON.parse(rawText);
-          finalUserText = parsed.message || parsed.text || rawText;
+          const parsed = JSON.parse(req.body);
+          message = parsed.message || '';
         } catch (e) {
-          if (rawText.includes('"message":')) {
-            const match = rawText.match(/"message"\s*:\s*"([^"]+)"/);
-            finalUserText = match ? match : rawText;
-          } else {
-            finalUserText = rawText;
-          }
+          message = req.body;
         }
+      } else {
+        message = req.body.message || '';
       }
-
-      const postData = JSON.stringify({
-        model: 'meta-llama/llama-3.1-70b-instruct:free',
-        messages: [
-          { role: 'system', content: 'You are a luxury psychoanalytic spiritual guidance companion. Speak with ancient wisdom, depth, and clarity.' },
-          { role: 'user', content: finalUserText }
-        ]
-      });
-
-      const options = {
-        hostname: 'openrouter.ai',
-        path: '/api/v1/chat/completions',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer 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',
-          'HTTP-Referer': 'https://awakened.royaldiademglobalservices.com',
-          'X-Title': 'Awakened AI Sanctuary',
-          'Content-Length': Buffer.byteLength(postData)
-        }
-      };
-
-      const request = https.request(options, (response) => {
-        let responseData = '';
-        response.on('data', (chunk) => { responseData += chunk; });
-        response.on('end', () => {
-          try {
-            const openRouterJson = JSON.parse(responseData);
-            
-            if (openRouterJson && openRouterJson.choices && openRouterJson.choices[0] && openRouterJson.choices[0].message) {
-              const aiResponseText = openRouterJson.choices[0].message.content;
-              res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-              return res.status(200).json({ message: aiResponseText, response: aiResponseText });
-            } 
-            else if (openRouterJson && openRouterJson.message) {
-              res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-              return res.status(200).json({ message: openRouterJson.message, response: openRouterJson.message });
-            }
-            else {
-              const fallbackResponse = "The sanctuary pathways are actively balancing your frequency. Your transmission is safe. Repeat your reflection once more to lock in the alignment.";
-              res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-              return res.status(200).json({ message: fallbackResponse, response: fallbackResponse });
-            }
-          } catch (e) {
-            const errorFallback = "Cosmic alignment processing. The engine has successfully caught your data stream. Please re-send your reflection.";
-            res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-            return res.status(200).json({ message: errorFallback, response: errorFallback });
-          }
-        });
-      });
-
-      request.on('error', (error) => {
-        res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-        return res.status(200).json({ message: "Network field stabilizing. Your connection is clear. Retry message.", response: "Network field stabilizing. Your connection is clear. Retry message." });
-      });
-
-      request.write(postData);
-      request.end();
-
-    } catch (err) {
-      res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-      return res.status(200).json({ message: "Sanctuary balancing completed. Refresh once to connect with the core.", response: "Sanctuary balancing completed. Refresh once to connect with the core." });
     }
-  });
+
+    const postData = JSON.stringify({
+      model: 'meta-llama/llama-3-70b-instruct:free',
+      messages: [
+        { role: 'system', content: 'You are a luxury psychoanalytic spiritual guidance companion. Speak with ancient wisdom, depth, and clarity.' },
+        { role: 'user', content: message }
+      ]
+    });
+
+    const options = {
+      hostname: 'openrouter.ai',
+      path: '/api/v1/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer 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',
+        'HTTP-Referer': 'https://royaldiademglobalservices.com',
+        'X-Title': 'Awakened AI Sanctuary',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    };
+
+    const request = https.request(options, (response) => {
+      let data = '';
+      response.on('data', (chunk) => { data += chunk; });
+      response.on('end', () => {
+        try {
+          // Pass back the clean string data natively expected by Flutter's parser
+          res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+          return res.status(200).send(data);
+        } catch (e) {
+          return res.status(500).json({ error: 'Parsing failure' });
+        }
+      });
+    });
+
+    request.on('error', (error) => {
+      return res.status(500).json({ error: 'Transmission corridor error' });
+    });
+
+    request.write(postData);
+    request.end();
+
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal system corridor error' });
+  }
 };
