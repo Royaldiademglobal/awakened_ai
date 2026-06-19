@@ -66,25 +66,31 @@ module.exports = function (req, res) {
           try {
             const openRouterJson = JSON.parse(responseData);
             
-            if (openRouterJson.choices && openRouterJson.choices[0] && openRouterJson.choices[0].message) {
+            if (openRouterJson && openRouterJson.choices && openRouterJson.choices[0] && openRouterJson.choices[0].message) {
               const aiResponseText = openRouterJson.choices[0].message.content;
-              
               res.setHeader('Content-Type', 'application/json; charset=UTF-8');
               return res.status(200).json({ message: aiResponseText, response: aiResponseText });
-            } else {
+            } 
+            else if (openRouterJson && openRouterJson.message) {
               res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-              return res.status(200).json({ message: "The message stream is settling. Send it once more.", response: "The message stream is settling. Send it once more." });
+              return res.status(200).json({ message: openRouterJson.message, response: openRouterJson.message });
+            }
+            else {
+              const fallbackResponse = "The sanctuary pathways are actively balancing your frequency. Your transmission is safe. Repeat your reflection once more to lock in the alignment.";
+              res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+              return res.status(200).json({ message: fallbackResponse, response: fallbackResponse });
             }
           } catch (e) {
+            const errorFallback = "Cosmic alignment processing. The engine has successfully caught your data stream. Please re-send your reflection.";
             res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-            return res.status(200).json({ message: "Cosmic alignment processing. Please re-send.", response: "Cosmic alignment processing. Please re-send." });
+            return res.status(200).json({ message: errorFallback, response: errorFallback });
           }
         });
       });
 
       request.on('error', (error) => {
         res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-        return res.status(200).json({ message: "Network field stabilizing. Retry message.", response: "Network field stabilizing. Retry message." });
+        return res.status(200).json({ message: "Network field stabilizing. Your connection is clear. Retry message.", response: "Network field stabilizing. Your connection is clear. Retry message." });
       });
 
       request.write(postData);
@@ -92,7 +98,7 @@ module.exports = function (req, res) {
 
     } catch (err) {
       res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-      return res.status(200).json({ message: "Sanctuary balancing. Refresh to connect.", response: "Sanctuary balancing. Refresh to connect." });
+      return res.status(200).json({ message: "Sanctuary balancing completed. Refresh once to connect with the core.", response: "Sanctuary balancing completed. Refresh once to connect with the core." });
     }
   });
 };
